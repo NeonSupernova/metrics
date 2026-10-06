@@ -1579,6 +1579,17 @@ runs:
         else
           echo "Using a forked version"
           METRICS_IMAGE=metrics:forked-$METRICS_VERSION
+          # Prefer the image published by this fork's "Publish image" workflow
+          # (ghcr.io/<owner>/metrics:forked-<version>) over rebuilding it on every run
+          if [[ ! $METRICS_USE_PREBUILT_IMAGE =~ ^([Ff]alse|[Oo]ff|[Nn]o|0)$ ]]; then
+            METRICS_REGISTRY_IMAGE=ghcr.io/$(echo "$METRICS_SOURCE" | tr '[:upper:]' '[:lower:]')/metrics:forked-$METRICS_VERSION
+            echo "Trying pre-built fork image $METRICS_REGISTRY_IMAGE"
+            if timeout 300 docker image pull $METRICS_REGISTRY_IMAGE; then
+              METRICS_IMAGE=$METRICS_REGISTRY_IMAGE
+            else
+              echo "Failed to pull pre-built fork image, will rebuild it locally"
+            fi
+          fi
         fi
         echo "Image name: $METRICS_IMAGE"
 
