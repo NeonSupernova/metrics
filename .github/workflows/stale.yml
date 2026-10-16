@@ -9,6 +9,9 @@ jobs:
   stale:
     name: Flag stale issues and pull requests
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
     steps:
       - uses: actions/stale@v6
         with:
@@ -24,10 +27,15 @@ jobs:
     needs:
       - stale
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
     steps:
-      - uses: dessant/lock-threads@v4
+      # v4 rejects tokens longer than 100 characters, which GitHub's current tokens exceed
+      - uses: dessant/lock-threads@v6
         with:
           github-token: ${{ github.token }}
+          process-only: issue, pr
           issue-inactive-days: 180
           issue-lock-reason: ""
           add-issue-labels: ☑️ archived
@@ -38,11 +46,13 @@ jobs:
     name: Remove expired workflow runs
     runs-on: ubuntu-latest
     continue-on-error: true
+    permissions:
+      actions: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run script
-        run: ./delete_workflows.sh lowlighter/metrics
+        run: bash ./delete_workflows.sh ${{ github.repository }}
         working-directory: .github/actions/ghcr-clean
         env:
           GITHUB_TOKEN: ${{ github.token }}
